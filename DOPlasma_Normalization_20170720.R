@@ -36,8 +36,8 @@ DOPlasma <- read.csv("19July2017DOPlasmaMetabolites_RAW_NoTransformation_Tier5_F
                      header = TRUE, sep = ",", stringsAsFactors = FALSE) # Read in csv and skip first line with batch info
 DOPlasma <- DOPlasma[,-c(3)] # Remove the third columns
 DOPlasmaNoRT <- DOPlasma[,-c(1:2)] #No Retention Time Info
-DOPlasma_Header <- read.csv("19July2017DOPlasmaMetabolites_RAW_NoTransformation_Tier5_ForR.csv", 
-                            header = FALSE, sep = ",", stringsAsFactors = FALSE) #read in a csv that includes the batch information
+
+DOPlasma_covariates <- read.csv("DOPlasma_Covariates.csv", header = TRUE, sep = ",", stringsAsFactors = FALSE) #read in a csv that includes the batch information
 
 #####################
 # Explore the data. #
@@ -52,15 +52,16 @@ summary(DOPlasma)
 
 molten.DOPlasma <- melt(DOPlasma, variable.name = "Mouse.ID", 
                         value.names = "Intensity", id.vars = c("RetentionTime", "Feature.ID") ) #melt the data into long form, renaming the columns appropriately
-BatchDF <- t(DOPlasma_Header[1:2, 4:ncol(DOPlasma_Header)]) # create a two lists with Batch and MouseID for later use in loop
-colnames(BatchDF)[1] <- "Batch.ID" #rename column names in BatchDF 
-colnames(BatchDF)[2] <- "Mouse.ID"
+# BatchDF <- t(DOPlasma_Header[1:2, 4:ncol(DOPlasma_Header)]) # create a two lists with Batch and MouseID for later use in loop
+# colnames(BatchDF)[1] <- "Batch.ID" #rename column names in BatchDF 
+# colnames(BatchDF)[2] <- "Mouse.ID"
 Batch_vector <- NULL # create an empty batch vector
 
 #For loop for parsing through the long form DO Plasma data and appending the batch information to the correct mouse sample
-for(i in 1:nrow(molten.DOPlasma)){ 
+for(i in 1:nrow(molten.DOPlasma))
+  { 
   ID = molten.DOPlasma[i, 3]
-  batch <- BatchDF[grep(ID, BatchDF[,2])[1],1]
+  batch <- DOPlasma_covariates[grep(ID, DOPlasma_covariates[,1])[1],1]
   #ifelse(is.na(molten.DOPlasma[i,2]), "", molten.DOPlasma[i,2] <- batch)
   Batch_vector <- append(Batch_vector,batch)
   }
