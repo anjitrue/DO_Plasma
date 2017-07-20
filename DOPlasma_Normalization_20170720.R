@@ -32,11 +32,9 @@ setwd("C:/Users/etrujillo/Desktop/DOProjectFolder")
 # Load in the data. #
 #####################
 
-DOPlasma <- read.csv("19July2017DOPlasmaMetabolites_RAW_NoTransformation_Tier5_ForR.csv", 
-                     header = TRUE, sep = ",", stringsAsFactors = FALSE) # Read in csv and skip first line with batch info
+DOPlasma <- read.csv("19July2017DOPlasmaMetabolites_RAW_NoTransformation_Tier5_ForR.csv", header = TRUE, sep = ",", stringsAsFactors = FALSE) # raw untransformed DO Plasma
 DOPlasma <- DOPlasma[,-c(3)] # Remove the third columns
 DOPlasmaNoRT <- DOPlasma[,-c(1:2)] #No Retention Time Info
-
 DOPlasma_covariates <- read.csv("DOPlasma_Covariates.csv", header = TRUE, sep = ",", stringsAsFactors = FALSE) #read in a csv that includes the batch information
 
 #####################
@@ -49,25 +47,25 @@ summary(DOPlasma)
 ###########################################
 # Restructure pivot table into long form. #
 ###########################################
+# Melt the data into long form, renaming the columns appropriately.
+# For loop for parsing through the long form DO Plasma data and appending the batch information to the correct mouse sample.
 
-molten.DOPlasma <- melt(DOPlasma, variable.name = "Mouse.ID", 
-                        value.names = "Intensity", id.vars = c("RetentionTime", "Feature.ID") ) #melt the data into long form, renaming the columns appropriately
-# BatchDF <- t(DOPlasma_Header[1:2, 4:ncol(DOPlasma_Header)]) # create a two lists with Batch and MouseID for later use in loop
-# colnames(BatchDF)[1] <- "Batch.ID" #rename column names in BatchDF 
-# colnames(BatchDF)[2] <- "Mouse.ID"
+molten.DOPlasma <- melt(DOPlasma, variable.name = "Mouse.ID", value.names = "Intensity", id.vars = c("RetentionTime", "Feature.ID") ) 
 Batch_vector <- NULL # create an empty batch vector
-
-#For loop for parsing through the long form DO Plasma data and appending the batch information to the correct mouse sample
+Intensity_vector <- NULL # create an empty intensity vector for metabolites
 for(i in 1:nrow(molten.DOPlasma))
   { 
-  ID = molten.DOPlasma[i, 3]
-  batch <- DOPlasma_covariates[grep(ID, DOPlasma_covariates[,1])[1],1]
-  #ifelse(is.na(molten.DOPlasma[i,2]), "", molten.DOPlasma[i,2] <- batch)
-  Batch_vector <- append(Batch_vector,batch)
+    #ID = molten.DOPlasma[i, 3] # iterate through every row of column 3
+    RetentionTime = molten.DOPlasma[i,1] # iterate through every row of column 1
+    #batch <- DOPlasma_covariates[grep(ID, DOPlasma_covariates[,1])[1],2] # find batch information in second column matching molten.DOPlasma
+    intensity <- molten.DOPlasma[grep(RetentionTime, molten.DOPlasma[,1]),1]
+    #Batch_vector <- append(Batch_vector, batch) # append 
+    Intensity_vector <- append(Intensity_vector, intensity)
   }
+Long_DOPlasma <- cbind(molten.DOPlasma, Batch_vector)#bind vector and long form Plasma data 
+head(Long_DOPlasma)
 
-#bind vector and long form Plasma data  
-Long_DOPlasma <- cbind(molten.DOPlasma, Batch_vector)
+DOPlasma[1,]
 
 ##################
 # Plotting data. #
@@ -84,13 +82,6 @@ pca_plasma <- prcomp(Transposed_DOPlasma[-c(1),])
 
 plot(density(t(DOPlasmaNoRT))) # Plot density
 
-metaboliteID <- NULL
-  
-  metaboliteID <- for(i in ID){print(rep(1:245))}
-  
-molten.DOPlasma <- cbind(molten.DOPlasma, metaboliteID)  
-  
-
 
 autoplot(prcomp(DOPlasma), label = TRUE, loadings = TRUE)
 
@@ -99,7 +90,6 @@ autoplot(princomp(mydf2))
 head(mydf2[1:3])
 
 mydf2[2] <- lapply(mydf2[2], as.numeric)
-
 
 ggplot(mydf, aes(x=Intensity, y=metabolite)) +
   geom_point(colour="lightblue", alpha=0.1, position="jitter") +
@@ -184,9 +174,3 @@ PeakHeight.Control <- PeakHeight[grep("_Control", rownames(PeakHeight)),]
 # index number for the samples with the following pattern
 grep("_Control", rownames(firstBatchPeakHeight)) # Controls in batch 1 are index 34 35 36
 grep("_Blank", rownames(firstBatchPeakHeight)) # Blanks in batch 1 are index 30 31 32 33
-
-
-
-
-
-
